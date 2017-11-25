@@ -1,0 +1,24 @@
+{
+  "name": "flyd-xstate",
+  "version": "0.0.1",
+  "description": "unifies the functionality of xstate and flyd",
+  "main": "index.js",
+  "scripts": {
+    "test": "dependency-check package.json && standard && node test/"
+  },
+  "keywords": [
+    "flyd",
+    "xstate"
+  ],
+  "author": "jayrbolton@gmail.com",
+  "license": "MIT",
+  "devDependencies": {
+    "dependency-check": "^2.9.1",
+    "standard": "^10.0.3",
+    "tape": "^4.8.0"
+  },
+  "dependencies": {
+    "flyd": "^0.2.4",
+    "xstate": "^1.2.1"
+  }
+}
