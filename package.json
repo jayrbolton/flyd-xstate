@@ -1,6 +1,6 @@
 {
   "name": "flyd-xstate",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "unifies the functionality of xstate and flyd",
   "main": "index.js",
   "scripts": {
