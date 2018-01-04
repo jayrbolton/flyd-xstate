@@ -1,11 +1,12 @@
-const machine = require('../')
 const test = require('tape')
-
-// an event stream
-// a state stream (two versions -- object and string)
+const flyd = require('flyd')
+const machine = require('..')
+const testStates = require('../lib/test')
 
 test('lightMachine example 1', t => {
+  const event = flyd.stream()
   const lights = machine({
+    eventStream: event,
     key: 'light',
     initial: 'green',
     states: {
@@ -15,15 +16,16 @@ test('lightMachine example 1', t => {
     }
   })
 
-  t.strictEqual(lights.state$(), 'green')
-  t.strictEqual(lights.stateString$(), 'green')
-  lights.event$('TIMER')
-  t.strictEqual(lights.state$(), 'yellow')
-  t.strictEqual(lights.stateString$(), 'yellow')
+  t.strictEqual(lights.state(), 'green')
+  t.strictEqual(lights.stateString(), 'green')
+  event('TIMER')
+  t.strictEqual(lights.state(), 'yellow')
+  t.strictEqual(lights.stateString(), 'yellow')
   t.end()
 })
 
 test('nested states example', t => {
+  const event = flyd.stream()
   const pedestrianStates = {
     initial: 'walk',
     on: {TIMER: 'green'},
@@ -35,6 +37,7 @@ test('nested states example', t => {
   }
 
   const lightMachine = machine({
+    eventStream: event,
     key: 'light',
     initial: 'yellow',
     states: {
@@ -44,24 +47,26 @@ test('nested states example', t => {
     }
   })
 
-  lightMachine.event$('TIMER')
-  t.strictEqual(lightMachine.stateString$(), 'red.walk')
-  t.deepEqual(lightMachine.state$(), {red: 'walk'})
+  event('TIMER')
+  t.strictEqual(lightMachine.stateString(), 'red.walk')
+  t.deepEqual(lightMachine.state(), {red: 'walk'})
 
-  lightMachine.event$('PED_TIMER')
-  t.deepEqual(lightMachine.state$(), {red: 'wait'})
-  t.strictEqual(lightMachine.stateString$(), 'red.wait')
-  lightMachine.event$('PED_TIMER')
-  t.deepEqual(lightMachine.state$(), {red: 'stop'})
-  t.strictEqual(lightMachine.stateString$(), 'red.stop')
-  lightMachine.event$('TIMER')
-  t.strictEqual(lightMachine.state$(), 'green')
-  t.strictEqual(lightMachine.stateString$(), 'green')
+  event('PED_TIMER')
+  t.deepEqual(lightMachine.state(), {red: 'wait'})
+  t.strictEqual(lightMachine.stateString(), 'red.wait')
+  event('PED_TIMER')
+  t.deepEqual(lightMachine.state(), {red: 'stop'})
+  t.strictEqual(lightMachine.stateString(), 'red.stop')
+  event('TIMER')
+  t.strictEqual(lightMachine.state(), 'green')
+  t.strictEqual(lightMachine.stateString(), 'green')
   t.end()
 })
 
 test('parallel states', t => {
+  const event = flyd.stream()
   const wordMachine = machine({
+    eventStream: event,
     parallel: true,
     states: {
       bold: {
@@ -96,16 +101,18 @@ test('parallel states', t => {
     }
   })
 
-  wordMachine.event$('TOGGLE_BOLD')
-  t.deepEqual(wordMachine.state$(), {bold: 'on', italics: 'off', underline: 'off', list: 'none'})
+  event('TOGGLE_BOLD')
+  t.deepEqual(wordMachine.state(), {bold: 'on', italics: 'off', underline: 'off', list: 'none'})
 
-  wordMachine.event$('TOGGLE_ITALICS')
-  t.deepEqual(wordMachine.state$(), {bold: 'on', italics: 'on', underline: 'off', list: 'none'})
+  event('TOGGLE_ITALICS')
+  t.deepEqual(wordMachine.state(), {bold: 'on', italics: 'on', underline: 'off', list: 'none'})
   t.end()
 })
 
 test('history states', t => {
+  const event = flyd.stream()
   const paymentMachine = machine({
+    eventStream: event,
     initial: 'method',
     states: {
       method: {
@@ -122,11 +129,32 @@ test('history states', t => {
     }
   })
 
-  paymentMachine.event$('SWITCH_CHECK')
-  t.deepEqual(paymentMachine.state$(), {method: 'check'})
-  paymentMachine.event$('NEXT')
-  t.strictEqual(paymentMachine.state$(), 'review')
-  paymentMachine.event$('PREVIOUS')
-  t.deepEqual(paymentMachine.state$(), {method: 'check'})
+  event('SWITCH_CHECK')
+  t.deepEqual(paymentMachine.state(), {method: 'check'})
+  event('NEXT')
+  t.strictEqual(paymentMachine.state(), 'review')
+  event('PREVIOUS')
+  t.deepEqual(paymentMachine.state(), {method: 'check'})
+  t.end()
+})
+
+test.only('auto test lib', t => {
+  const event = flyd.stream()
+  const lights = machine({
+    eventStream: event,
+    key: 'light',
+    initial: 'green',
+    states: {
+      green: { on: { TIMER: 'yellow' } },
+      yellow: { on: { TIMER: 'red' } },
+      red: { on: { TIMER: 'green' } }
+    }
+  })
+  testStates(lights, event, [
+    ['TIMER', 'yellow'],
+    ['TIMER', 'red'],
+    ['TIMER', 'green'],
+    ['TIMER', 'yellow']
+  ], t)
   t.end()
 })
